@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MyLight</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#111;--panel:#2b2b2b;--line:#4a3d22;--gold:#f2b95c;--pale:#ffd98f;--text:#eee;--mute:#777;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Poppins,system-ui,sans-serif;font-weight:300}
+button,input,textarea{font:inherit;color:inherit}
+body{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+nav{display:flex;justify-content:space-between;padding:20px 28px;font-size:14px}
+nav button{background:none;border:0;cursor:pointer;color:var(--mute);padding:4px}
+nav button.on,nav .brand{color:var(--gold)}
+nav .brand{font-weight:400}
+main{flex:1;display:flex;align-items:center;justify-content:center;position:relative;padding:12px 20px 60px}
+.view{display:none;width:100%;max-width:440px;flex-direction:column;align-items:center}
+.view.on{display:flex}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+/* fire */
+.stage{position:relative;width:min(560px,100%);height:300px;display:flex;align-items:center;justify-content:center}
+.glow{position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(242,160,50,.35),rgba(242,160,50,0) 68%)}
+.fire{font-size:76px;position:relative;filter:drop-shadow(0 0 22px rgba(255,150,30,.7));animation:flick 2.4s ease-in-out infinite;transform-origin:50% 90%}
+.fire.big{font-size:96px}
+@keyframes flick{0%,100%{transform:scale(1) rotate(0)}30%{transform:scale(1.04,1.07) rotate(-1.5deg)}60%{transform:scale(.98,1.02) rotate(1.5deg)}}
+.cap{position:absolute;bottom:34px;font-size:12px;color:#8a7650}
+.log{position:absolute;right:0;top:50%;transform:translateY(-50%);background:linear-gradient(#7a5236,#4d3322);border:0;border-radius:6px 18px 18px 6px;padding:10px 18px;color:var(--pale);font-size:15px;cursor:pointer;box-shadow:inset -10px 0 0 rgba(0,0,0,.2)}
+.log:hover{background:linear-gradient(#8b5f40,#5a3b27)}
+.week{display:flex;gap:18px;position:absolute;bottom:0;font-size:9px;color:var(--mute)}
+.week div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.week i{width:7px;height:7px;border-radius:50%;background:#333}
+.week i.lit{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+/* cards */
+.card{width:100%;border:1px solid var(--line);border-radius:10px;background:rgba(17,17,17,.92);padding:22px;display:flex;flex-direction:column;gap:14px;font-size:14px}
+.card h2{font-size:15px;font-weight:400;margin:0;text-align:center}
+.date{font-size:11px;color:var(--mute);margin:0}
+.moods{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{border:1px solid var(--line);background:none;border-radius:20px;padding:7px 15px;font-size:13px;cursor:pointer}
+.chip.sel{background:var(--pale);color:#222;border-color:var(--pale)}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opts label{display:flex;gap:10px;align-items:center;font-size:13px;cursor:pointer;padding:4px 0}
+.opts input{accent-color:var(--gold)}
+textarea{background:#1b1b1b;border:1px solid var(--line);border-radius:6px;padding:10px;resize:none;height:90px;width:100%;font-size:13px}
+.btn{align-self:flex-end;background:var(--pale);color:#222;border:0;border-radius:4px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer}
+.btn.ghost{background:#444;color:#ddd}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;justify-content:space-between;width:100%}
+.back{background:none;border:0;cursor:pointer;align-self:flex-start;padding:0;color:var(--mute)}
+.q{text-align:center;font-size:17px;line-height:1.5;margin:0;padding:0 14px}
+.lbl{text-align:center;font-size:10px;color:var(--gold);margin:0}
+hr{border:0;border-top:1px solid #444;width:70%}
+.by{font-size:11px;color:var(--mute);text-align:center;margin:0}
+/* profile */
+.pbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;width:100%;margin-bottom:14px}
+.ptitle{color:var(--gold);font-size:11px;margin:0 0 4px 2px;width:100%}
+.me{display:flex;gap:14px;align-items:center}
+.av{width:64px;height:64px;border-radius:8px;background:#111;border:1px solid #444;display:grid;place-items:center;font-size:30px}
+.mail{color:var(--gold);font-size:13px}
+.mute{color:var(--mute);font-size:12px}
+.mid{text-align:center;font-size:13px;margin:0 0 12px}.mid b{color:var(--gold);font-weight:300}
+.two{display:flex;justify-content:space-between}
+.two small{display:block;font-size:10px;color:#999}
+.two span{color:var(--pale);font-size:16px}
+.out{background:none;border:0;color:var(--mute);cursor:pointer;font-size:12px;margin-top:4px}
+/* sign in */
+.hero{font-size:13px;text-align:center;line-height:1.7;margin-bottom:18px}
+.hero mark{background:var(--pale);color:#222;padding:0 4px;font-weight:500;border-radius:2px}
+.hero em{font-style:normal;color:var(--pale)}
+.si{align-items:stretch}
+.si h2{color:var(--gold);font-weight:400}
+.si label{font-size:10px;color:#999}
+.si input{background:#1b1b1b;border:1px solid var(--line);border-radius:3px;padding:8px;width:100%;font-size:13px}
+.wide{width:100%;border:1px solid var(--line);background:none;border-radius:3px;padding:7px;cursor:pointer;font-size:13px}
+.wide.fill{background:#444;border:0;color:#aaa}
+.or{margin:14px 0 8px;font-size:15px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--pale);color:#222;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.on{opacity:1}
+@media(max-width:520px){.stage{height:330px}.log{top:auto;bottom:70px;right:50%;transform:translateX(50%)}.fire{margin-bottom:60px}}
+@media(prefers-reduced-motion:reduce){.fire{animation:none}}
+.wide.fill{background:var(--pale);color:#222;font-weight:500}.wide.fill:disabled{opacity:.5}.err{color:#ff8a7a;font-size:12px;margin:0;min-height:0}
+</style>
+</head>
+<body>
+<nav><span class="brand">MyLight</span><button id="pbtn" aria-label="Profile">Profile</button></nav>
+<main>
+
+<section class="view on" id="v-sign" style="max-width:360px">
+  <p class="hero">A few words in the <mark>night</mark>,<br>to make your <em>days</em> more <b style="color:var(--pale);font-weight:500">bright</b></p>
+  <form class="card si" id="signform">
+    <h2 id="si-t">Sign in</h2>
+    <label for="em">With an email</label>
+    <input id="em" type="email" required autocomplete="email">
+    <label for="pw">Password</label>
+    <input id="pw" type="password" minlength="6" required autocomplete="current-password">
+    <p class="err" id="err" role="alert"></p>
+    <button class="wide fill" id="cont" type="submit">Continue</button>
+    <label>With Google</label>
+    <button class="wide" type="button" id="goog" aria-label="Continue with Google"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.100 0 24s.9 7.600 2.600 10.800l7.900-6.100z"/><path fill="#34A853" d="M24 48c6.500 0 11.900-2.100 15.900-5.800l-7.500-5.800c-2.100 1.400-4.800 2.300-8.400 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/></svg></button>
+  </form>
+  <p class="or">Or,</p>
+  <button class="btn" id="mode" type="button" style="align-self:center">Create an account</button>
+  <button class="btn" id="demo" type="button" style="align-self:center;margin-top:8px;background:#444;color:#ddd">Explore demo →</button>
+</section>
+
+<section class="view" id="v-home">
+  <div class="stage">
+    <div class="glow"></div>
+    <div class="fire" aria-hidden="true">🔥</div>
+    <p class="cap" id="cap">Your fire is waiting</p>
+    <button class="log" id="newb">New Entry +</button>
+    <div class="week" id="week"></div>
+  </div>
+</section>
+
+<section class="view" id="v-mood">
+  <div class="card">
+    <button class="back" data-go="home" aria-label="Back">‹</button>
+    <h2>How are you feeling?</h2>
+    <div class="moods" id="moods"></div>
+    <button class="btn" id="m-next" disabled>Continue</button>
+  </div>
+</section>
+
+<section class="view" id="v-write">
+  <div class="card">
+    <button class="back" data-go="mood" aria-label="Back">‹</button>
+    <p class="date" id="today"></p>
+    <h2 style="text-align:left">What’s on your mind today?</h2>
+    <textarea id="txt" placeholder="A few words are enough" aria-label="Your entry"></textarea>
+    <h2 style="text-align:left">How would you describe today?</h2>
+    <div class="opts" id="cats"></div>
+    <button class="btn" id="light" disabled>Light today’s fire 🔥</button>
+  </div>
+</section>
+
+<section class="view" id="v-result">
+  <div class="card">
+    <p class="lbl">🌟 Your light</p>
+    <p class="q" id="r-txt"></p>
+    <hr style="align-self:center">
+    <p class="lbl">💬 A thought for you</p>
+    <p class="q" id="r-q"></p>
+    <p class="by" id="r-by"></p>
+    <div class="row"><button class="btn ghost" id="discard">Discard</button><button class="btn" id="save">Save</button></div>
+  </div>
+</section>
+
+<section class="view" id="v-prof" style="max-width:380px">
+  <p class="ptitle">Me</p>
+  <div class="pbox"><div class="me"><div class="av">🔥</div><div><div class="mail" id="p-mail"></div><div class="mute">Keeping my light alive</div></div></div><button class="out" id="out">Sign out</button></div>
+  <p class="ptitle">My light</p>
+  <div class="pbox"><p class="mid"><b id="p-days">0</b> days illuminated</p><div class="two"><div><small>First light</small><span id="p-first">–</span></div><div><small>Last light</small><span id="p-last">–</span></div></div></div>
+  <p class="ptitle">My stats</p>
+  <div class="pbox"><p class="mid">Most frequent mood: <b id="p-mood">–</b></p><div class="two"><div><small>Most active month</small><span id="p-month">–</span></div><div><small>Favorite category</small><span id="p-cat">–</span></div></div></div>
+</section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const SUPABASE_URL='https://drfufaeezvscwwsumyuh.supabase.co', SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZnVmYWVlenZzY3d3c3VteXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMzU3NzYsImV4cCI6MjEwNjcxMTc3Nn0.t-5rxG4jp21kuA9wt-tXZFJNTq5HsBtOWVtNXD43yyw';
+const CONFIGURED=!/YOUR_SUPABASE/.test(SUPABASE_URL+SUPABASE_ANON_KEY);
+const sb=CONFIGURED?supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+let demo=false;
+const DEMO_T={Calm:[{text:'Nothing can disturb a quiet mind.',author:'Proverb'}],Happy:[{text:'Joy shared is joy doubled.',author:'Proverb'}],Motivated:[{text:'If you never shoot, you’ll never miss.',author:'Spicyuuu, TikTok'}],Tired:[{text:'Rest is part of the work.',author:'Unknown'}],Sad:[{text:'This too shall pass.',author:'Persian proverb'}],Frustrated:[{text:'Progress is rarely a straight line.',author:'Unknown'}],Other:[{text:'Small lights still push back the dark.',author:'Unknown'}]};
+const $=s=>document.querySelector(s);
+const MOODS=['Calm','Happy','Motivated','Tired','Sad','Frustrated','Other'];
+const CATS=[['Energy','🔥'],['Calm','🌊'],['Reflection','🌙'],['Growth','🌱'],['Difficult','☁️']];
+const CATNAME={Growth:'Personal growth'};
+let entries=[],user=null,mood=null,cat=null,pending=null,signup=false;
+const dkey=d=>d.toLocaleDateString('en-CA');
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)};
+
+function show(n){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+n));
+  $('#pbtn').classList.toggle('on',n==='prof');
+  $('.brand').style.color=n==='prof'?'var(--mute)':'var(--gold)';
+  $('#pbtn').style.display=user?'':'none';
+  if(n==='home')renderHome();
+  if(n==='prof')renderProf();
+}
+function renderHome(){
+  const lit=entries.some(e=>e.date===dkey(new Date()));
+  $('#cap').textContent=lit?'Your fire is still up !':'Your fire is waiting';
+  const days=new Set(entries.map(e=>e.date)),w=$('#week');w.innerHTML='';
+  w.style.display=entries.length?'flex':'none';
+  for(let i=5;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);
+    w.insertAdjacentHTML('beforeend',`<div>${d.toLocaleDateString('en',{weekday:'short'})}<i class="${days.has(dkey(d))?'lit':''}"></i></div>`)}
+}
+const fmt=s=>new Date(s+'T12:00').toLocaleDateString('en',{month:'long',day:'numeric',year:'numeric'});
+const mostCommon=a=>{const c={};a.forEach(x=>c[x]=(c[x]||0)+1);return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]};
+function renderProf(){
+  $('#p-mail').textContent=user.email;
+  const ds=[...new Set(entries.map(e=>e.date))].sort();
+  $('#p-days').textContent=ds.length;
+  $('#p-first').textContent=ds.length?fmt(ds[0]):'–';
+  $('#p-last').textContent=ds.length?fmt(ds[ds.length-1]):'–';
+  $('#p-mood').textContent=mostCommon(entries.map(e=>e.mood))||'–';
+  $('#p-month').textContent=mostCommon(entries.map(e=>new Date(e.date+'T12:00').toLocaleDateString('en',{month:'long'})))||'–';
+  const c=mostCommon(entries.map(e=>e.cat));$('#p-cat').textContent=c?(CATNAME[c]||c):'–';
+}
+// ---- data ----
+async function loadEntries(){
+  const {data,error}=await sb.from('entries').select('entry_date,mood,category,text').order('entry_date');
+  if(error)return toast('Could not load entries: '+error.message);
+  entries=data.map(r=>({date:r.entry_date,mood:r.mood,cat:r.category,text:r.text}));
+}
+async function randomThought(m){
+  if(demo){const l=DEMO_T[m]||DEMO_T.Other;return l[Math.floor(Math.random()*l.length)]}
+  for(const k of [m,'Other']){
+    const {data,error}=await sb.rpc('random_thought',{p_mood:k});
+    if(!error&&data&&data.length)return data[0];
+  }
+  return {text:'Small lights still push back the dark.',author:'Unknown'};
+}
+// ---- auth ----
+if(sb)sb.auth.onAuthStateChange(async(_e,session)=>{
+  user=session?session.user:null;
+  if(user){await loadEntries();if($('#v-sign').classList.contains('on'))show('home')}
+  else{entries=[];show('sign')}
+});
+(sb?sb.auth.getSession():Promise.resolve({data:{session:null}})).then(async({data})=>{
+  user=data.session?data.session.user:null;
+  if(user)await loadEntries();
+  show(user?'home':'sign');
+  if(!sb)$('#err').textContent='Supabase is not configured yet. Add your URL and key in the file, or try the demo.';
+});
+$('#mode').onclick=()=>{signup=!signup;$('#si-t').textContent=signup?'Create account':'Sign in';
+  $('#mode').textContent=signup?'I have an account':'Create an account';$('#err').textContent='';
+  $('#pw').autocomplete=signup?'new-password':'current-password'};
+$('#signform').onsubmit=async e=>{
+  e.preventDefault();$('#err').textContent='';
+  if(!sb)return $('#err').textContent='Add your Supabase URL and key first, or try the demo.';
+  $('#cont').disabled=true;
+  const cred={email:$('#em').value.trim(),password:$('#pw').value};
+  const {data,error}=signup?await sb.auth.signUp(cred):await sb.auth.signInWithPassword(cred);
+  $('#cont').disabled=false;
+  if(error)return $('#err').textContent=error.message;
+  if(signup&&!data.session)toast('Check your email to confirm your account.');
+};
+$('#goog').onclick=async()=>{
+  if(!sb)return $('#err').textContent='Add your Supabase URL and key first, or try the demo.';
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+  if(error)$('#err').textContent=error.message;
+};
+$('#out').onclick=()=>{if(demo){demo=false;user=null;entries=[];show('sign')}else sb.auth.signOut()};
+$('#demo').onclick=()=>{demo=true;user={email:'demo@mylight.app'};const t=new Date();
+  entries=[[0,'Calm','Growth'],[1,'Calm','Calm'],[3,'Happy','Growth'],[4,'Motivated','Energy'],[6,'Calm','Reflection']].map(([o,m,c])=>{const d=new Date(t);d.setDate(t.getDate()-o);return {date:dkey(d),mood:m,cat:c,text:'Demo entry'}});
+  show('home')};
+$('#pbtn').onclick=()=>show('prof');
+$('.brand').onclick=()=>user&&show('home');
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+// ---- new entry ----
+$('#moods').innerHTML=MOODS.map(m=>`<button class="chip" data-m="${m}">${m}</button>`).join('');
+$('#moods').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;mood=b.dataset.m;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c===b));$('#m-next').disabled=false};
+$('#newb').onclick=()=>{mood=cat=null;$('#txt').value='';$('#m-next').disabled=true;$('#light').disabled=true;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('#cats input').forEach(i=>i.checked=false);show('mood')};
+$('#m-next').onclick=()=>{$('#today').textContent=new Date().toLocaleDateString('en',{month:'long',day:'numeric',year:'numeric'});show('write')};
+$('#cats').innerHTML=CATS.map(([n,i])=>`<label><input type="radio" name="c" value="${n}"> <span>${i} ${n}</span></label>`).join('');
+const ready=()=>{$('#light').disabled=!($('#txt').value.trim()&&cat)};
+$('#cats').onchange=e=>{cat=e.target.value;ready()};$('#txt').oninput=ready;
+$('#light').onclick=async()=>{
+  $('#light').disabled=true;
+  const t=await randomThought(mood);
+  pending={date:dkey(new Date()),mood,cat,text:$('#txt').value.trim(),thought:t.text,author:t.author};
+  $('#r-txt').textContent=pending.text;$('#r-q').textContent=t.text;$('#r-by').textContent=t.author||'';
+  $('#light').disabled=false;show('result');
+};
+$('#discard').onclick=()=>{pending=null;show('home')};
+$('#save').onclick=async()=>{
+  $('#save').disabled=true;
+  const p=pending;
+  const {error}=demo?{}:await sb.from('entries').insert({entry_date:p.date,mood:p.mood,category:p.cat,text:p.text,thought:p.thought,thought_author:p.author});
+  $('#save').disabled=false;
+  if(error)return toast('Could not save: '+error.message);
+  entries.push({date:p.date,mood:p.mood,cat:p.cat,text:p.text});pending=null;
+  toast('Saved. Your fire is lit.');show('home');
+};
+</script>
+</body>
+</html>
